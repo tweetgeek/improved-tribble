@@ -181,6 +181,7 @@ app/
     │   └── PaymentNotificationFormatter.php   # PL, Europe/Warsaw, 299,90 PLN
     ├── Webhooks/
     │   ├── Contracts/PaymentProvider.php
+    │   ├── WebhookRejectionLogger.php         # jeden wpis webhook.rejected dla 401/400/422
     │   ├── PaymentProviderRegistry.php
     │   ├── ReceivePaymentWebhook.php          # transakcja: createOrFirst + dispatch eventu
     │   ├── Providers/GenericGatewayProvider.php
@@ -189,6 +190,8 @@ app/
     │   │   └── SignatureVerification.php      # VO: verifiedWith current|previous
     │   └── Exceptions/
     │       ├── UnknownPaymentProvider.php     # render 401 unknown_provider
+    │       ├── MalformedWebhookPayload.php    # render 400 malformed_payload (po uwierzytelnieniu)
+    │       ├── InvalidWebhookPayload.php      # ValidationException → 422 validation_failed + jeden log
     │       ├── InvalidWebhookSignature.php    # render 401 invalid_signature
     │       └── PaymentProviderMisconfigured.php
     └── Notifications/
@@ -206,8 +209,12 @@ resources/views/mail/
 └── payment-event-text.blade.php               # tekst
 
 tests/
+├── Fixtures/
+│   └── payment_payload_example.json           # kopia przykładowego payloadu (dostępna też w kontenerze)
 ├── Support/
-│   └── SignsWebhooks.php                      # trait: signedWebhook(payload, timestamp?, secret?)
+│   ├── SignsWebhooks.php                      # trait: postSignedWebhook(), examplePayload()
+│   ├── Webhooks/{AcmeTestProvider,WebhookContender}.php
+│   └── Notifications/{RecordingChannel,SendRecordingNotification,PaymentEvents,ThrowingTransport}.php
 ├── Unit/
 │   ├── Webhooks/HmacSignatureVerifierTest.php           # wektor testowy, okno, rotacja, format nagłówka
 │   ├── Webhooks/GenericGatewayProviderTest.php          # mapowanie na PaymentEvent

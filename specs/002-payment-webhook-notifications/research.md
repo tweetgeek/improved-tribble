@@ -331,6 +331,8 @@ do payloadu zadania.
 | `notifications.test_event_skipped` | info | `provider`, `event_id` |
 | `notifications.no_channels_enabled` | warning | `provider`, `event_id` |
 | `notifications.queued` | info | `provider`, `event_id`, `channels` |
+| `notifications.queueing_failed` | error | `provider`, `event_id`, `exception` (metoda `failed()` listenera) |
+| `notifications.invalid_channel_config` | error | `channel`, `job` (wpis kanału z klasą spoza `SendChannelNotification`) |
 | `notification.delivered` | info | `channel`, `provider`, `event_id`, `attempt` |
 | `notification.already_delivered` | info | `channel`, `provider`, `event_id` |
 | `notification.attempt_failed` | error | `channel`, `provider`, `event_id`, `attempt`, `max_attempts`, `transient`, `notification`, `exception` |

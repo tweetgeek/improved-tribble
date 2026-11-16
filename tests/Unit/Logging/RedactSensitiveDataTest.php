@@ -95,3 +95,17 @@ it('does not change message or level', function () {
     expect($processed->message)->toBe('password reset failed')
         ->and($processed->level)->toBe(Level::Error);
 });
+
+it('masks the payment webhook signature header but keeps the provider and the verified secret kind', function () {
+    $record = makeRedactor()(makeLogRecord(context: [
+        'headers' => [
+            'x-webhook-signature' => ['t=1718029200,v1=b8e80ecc138a0aedc617c4ce00d848da10f829a787bb7f160c7111497c6d8ed5'],
+            'x-payment-provider' => ['generic'],
+        ],
+        'verified_with' => 'previous',
+    ]));
+
+    expect($record->context['headers']['x-webhook-signature'])->toBe('[REDACTED]')
+        ->and($record->context['headers']['x-payment-provider'])->toBe(['generic'])
+        ->and($record->context['verified_with'])->toBe('previous');
+});

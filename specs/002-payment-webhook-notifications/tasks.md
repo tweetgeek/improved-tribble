@@ -289,7 +289,7 @@ Rozbieżna treść daje `warning`.
   - ten sam `event_id` od dwóch dostawców (drugi testowy, zarejestrowany przez `config(['webhooks.providers.acme' => [...]])` z klasą z `tests/Support/Webhooks/AcmeTestProvider.php`) → oba `accepted`, 2 wiersze;
   - `correlation_id` w odpowiedzi na duplikat jest identyfikatorem bieżącego żądania, a wiersz zachowuje pierwotny.
 - [X] T031 [P] [US2] Utwórz testową klasę dostawcy `tests/Support/Webhooks/AcmeTestProvider.php` (implementuje `PaymentProvider`, używa `HmacSignatureVerifier` i reguł formatu `generic`, by uprościć testy). Użyją jej T030 i T064
-- [ ] T032 [P] [US2] Test integracyjny `tests/Feature/Integration/ConcurrentWebhookDeliveryTest.php` z `->group('integration')`, na PostgreSQL i Redisie w kontenerze. `Concurrency::run()` (driver `process`) uruchamia 10 równoległych wywołań `ReceivePaymentWebhook::handle()` z tym samym `PaymentEvent`. Oczekiwane: dokładnie 1 wynik `Accepted`, 9 wyników `Duplicate` i 1 wiersz w `webhook_events`, w 100% z 5 powtórzeń w pętli (SC-005). Brak Redisa lub PostgreSQL ma kończyć test błędem, a nie pominięciem (F-R16)
+- [X] T032 [P] [US2] Test integracyjny `tests/Feature/Integration/ConcurrentWebhookDeliveryTest.php` z `->group('integration')`, na PostgreSQL i Redisie w kontenerze. `Concurrency::run()` (driver `process`) uruchamia 10 równoległych wywołań `ReceivePaymentWebhook::handle()` z tym samym `PaymentEvent`. Oczekiwane: dokładnie 1 wynik `Accepted`, 9 wyników `Duplicate` i 1 wiersz w `webhook_events`, w 100% z 5 powtórzeń w pętli (SC-005). Brak Redisa lub PostgreSQL ma kończyć test błędem, a nie pominięciem (F-R16)
 
 ### Implementation for User Story 2
 
@@ -435,7 +435,7 @@ ponowienie” w [quickstart.md](quickstart.md), a także
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T051 [P] [US4] Rozszerz `tests/Feature/Notifications/SendChannelNotificationTest.php` (z `RefreshDatabase`).
+- [X] T051 [P] [US4] Rozszerz `tests/Feature/Notifications/SendChannelNotificationTest.php` (z `RefreshDatabase`).
 
   **Błąd przejściowy** (kanał rzuca `TransientChannelException`):
   - wyjątek leci dalej;
@@ -455,28 +455,28 @@ ponowienie” w [quickstart.md](quickstart.md), a także
   **`failed()`**: `status=failed`, `failed_at` ustawione.
 
   **Ręczne ponowienie**: drugi `handle()` po `failed` zaczyna od `pending`, a po sukcesie daje `delivered` z `attempts=2`.
-- [ ] T052 [P] [US4] Rozszerz `tests/Feature/Notifications/SalesTeamChannelTest.php` (cache `array`):
+- [X] T052 [P] [US4] Rozszerz `tests/Feature/Notifications/SalesTeamChannelTest.php` (cache `array`):
   - `mode=transient` → każde wywołanie rzuca `TransientChannelException`;
   - `mode=permanent` → rzuca `PermanentChannelException`;
   - `mode=fail_first_n` z `fail_first=2` → wywołania 1 i 2 rzucają `TransientChannelException`, wywołanie 3 kończy się sukcesem, a licznik jest osobny dla każdego `deliveryKey` (drugie zdarzenie zaczyna od 1);
   - każde wywołanie loguje `salesteam.mock.received` z bieżącym `mode`;
   - nieznany tryb → `LogicException`.
-- [ ] T053 [P] [US4] Rozszerz `tests/Feature/Notifications/MailtrapChannelTest.php` o mapowanie błędów. Atrapa Mailera rzuca `Symfony\Component\Mailer\Exception\TransportException`:
+- [X] T053 [P] [US4] Rozszerz `tests/Feature/Notifications/MailtrapChannelTest.php` o mapowanie błędów. Atrapa Mailera rzuca `Symfony\Component\Mailer\Exception\TransportException`:
   - kod 535 i 530 → `PermanentChannelException`;
   - `Connection could not be established` / timeout, kod 421 lub 450, kod 550 z „too many emails per second” → `TransientChannelException`;
   - puste `MAIL_USERNAME` lub `MAIL_PASSWORD` przy `MAIL_MAILER=smtp` albo pusta lista `recipients` → `PermanentChannelException` bez próby wysyłki.
 
   Oryginalny wyjątek ma być dostępny jako `previous`.
-- [ ] T054 [P] [US4] Test izolacji `tests/Feature/Notifications/ChannelIsolationTest.php`. Ustaw `SALESTEAM_MOCK_MODE=transient` przez `config()`, wywołaj listener z `Queue::fake()`, a potem wykonaj każdy wypchnięty job osobno przez `withFakeQueueInteractions()`. Mailtrap: `Mail::assertSentCount(1)`, delivery `delivered`. SalesTeam: wyjątek, delivery `pending`. Kolejność wykonania (SalesTeam pierwszy) nie wpływa na wynik Mailtrap (FR-024, SC-008)
-- [ ] T055 [P] [US4] Test integracyjny `tests/Feature/Integration/NotificationDeadLetterTest.php` z `->group('integration')`, na Redisie i PostgreSQL, `QUEUE_CONNECTION=redis`.
+- [X] T054 [P] [US4] Test izolacji `tests/Feature/Notifications/ChannelIsolationTest.php`. Ustaw `SALESTEAM_MOCK_MODE=transient` przez `config()`, wywołaj listener z `Queue::fake()`, a potem wykonaj każdy wypchnięty job osobno przez `withFakeQueueInteractions()`. Mailtrap: `Mail::assertSentCount(1)`, delivery `delivered`. SalesTeam: wyjątek, delivery `pending`. Kolejność wykonania (SalesTeam pierwszy) nie wpływa na wynik Mailtrap (FR-024, SC-008)
+- [X] T055 [P] [US4] Test integracyjny `tests/Feature/Integration/NotificationDeadLetterTest.php` z `->group('integration')`, na Redisie i PostgreSQL, `QUEUE_CONNECTION=redis`.
   - `mode=permanent`: dispatch `SendSalesTeamNotification`, `Artisan::call('queue:work', ['connection' => 'redis', '--once' => true, '--stop-when-empty' => true])`. Oczekiwane: wpis w `failed_jobs`, którego `payload` zawiera `correlation_id` (Context) i nazwę `SendSalesTeamNotification`, `exception` z `PermanentChannelException` oraz `notification_deliveries.status=failed`.
   - `mode=transient`: po jednym `--once` zadanie jest w zbiorze opóźnionym kolejki Redis (`queues:default:delayed`), z wynikiem ≈ `now + 60` s (±5 s), a `attempts=1`.
 
 ### Implementation for User Story 4
 
-- [ ] T056 [P] [US4] Utwórz wyjątki `TransientChannelException` i `PermanentChannelException` (`make:exception`) w `app/Services/Notifications/Channels/Exceptions/`. Oba przyjmują `string $message` i `?Throwable $previous`. Uzupełnij PHPDoc `@throws` w `app/Services/Notifications/Channels/Contracts/NotificationChannel.php`
-- [ ] T057 [P] [US4] Utwórz enum `App\Enums\DeliveryStatus` w `app/Enums/DeliveryStatus.php`, string-backed: `Pending = 'pending'`, `Delivered = 'delivered'`, `Failed = 'failed'`
-- [ ] T058 [US4] Utwórz migrację i model `NotificationDelivery` (`php artisan make:model NotificationDelivery -mf`): `database/migrations/xxxx_create_notification_deliveries_table.php`, `app/Models/NotificationDelivery.php`, `database/factories/NotificationDeliveryFactory.php`.
+- [X] T056 [P] [US4] Utwórz wyjątki `TransientChannelException` i `PermanentChannelException` (`make:exception`) w `app/Services/Notifications/Channels/Exceptions/`. Oba przyjmują `string $message` i `?Throwable $previous`. Uzupełnij PHPDoc `@throws` w `app/Services/Notifications/Channels/Contracts/NotificationChannel.php`
+- [X] T057 [P] [US4] Utwórz enum `App\Enums\DeliveryStatus` w `app/Enums/DeliveryStatus.php`, string-backed: `Pending = 'pending'`, `Delivered = 'delivered'`, `Failed = 'failed'`
+- [X] T058 [US4] Utwórz migrację i model `NotificationDelivery` (`php artisan make:model NotificationDelivery -mf`): `database/migrations/xxxx_create_notification_deliveries_table.php`, `app/Models/NotificationDelivery.php`, `database/factories/NotificationDeliveryFactory.php`.
 
   Kolumny zgodnie z data-model §1.2:
 
@@ -499,7 +499,7 @@ ponowienie” w [quickstart.md](quickstart.md), a także
   Model: `casts()` → `status` → `DeliveryStatus`, `delivered_at` i `failed_at` → `immutable_datetime`.
 
   Factory: stany `delivered()` i `failed()`. Zależy od T057
-- [ ] T059 [US4] Rozszerz `app/Services/Notifications/Channels/SalesTeamChannel.php` o tryby z `config('notifications.channels.salesteam.mock')` (research R15):
+- [X] T059 [US4] Rozszerz `app/Services/Notifications/Channels/SalesTeamChannel.php` o tryby z `config('notifications.channels.salesteam.mock')` (research R15):
   - `success`;
   - `transient`: zawsze `TransientChannelException`;
   - `permanent`: zawsze `PermanentChannelException`;
@@ -507,13 +507,13 @@ ponowienie” w [quickstart.md](quickstart.md), a także
   - nieznany tryb: `LogicException`.
 
   Log `salesteam.mock.received` przed decyzją. Spełnia T052. Zależy od T056
-- [ ] T060 [US4] Rozszerz `app/Services/Notifications/Channels/MailtrapChannel.php` o mapowanie błędów z research R11:
+- [X] T060 [US4] Rozszerz `app/Services/Notifications/Channels/MailtrapChannel.php` o mapowanie błędów z research R11:
   - przed wysyłką: brak `config('mail.mailers.smtp.username')`/`password` przy mailerze `smtp` albo pusta lista `recipients` → `PermanentChannelException`;
   - `TransportExceptionInterface` z kodem 530 lub 535 → `PermanentChannelException`;
   - każdy inny `Throwable` z transportu → `TransientChannelException`, z `previous`.
 
   Spełnia T053. Zależy od T056
-- [ ] T061 [US4] Rozszerz `app/Jobs/Notifications/SendChannelNotification.php` o idempotencję i klasyfikację błędów (research R11, R12, `data-model.md` §2):
+- [X] T061 [US4] Rozszerz `app/Jobs/Notifications/SendChannelNotification.php` o idempotencję i klasyfikację błędów (research R11, R12, `data-model.md` §2):
   1. `NotificationDelivery::createOrFirst(['provider','event_id','channel'], ['status' => Pending, 'correlation_id' => context('correlation_id')])`;
   2. `status === Delivered` → log `info` `notification.already_delivered` i `return`;
   3. `status === Failed` (ręczne `queue:retry`) → ustaw `Pending`;
@@ -542,13 +542,13 @@ oraz przegląd z T068.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T062 [P] [US5] Utwórz klasy testowe `tests/Support/Notifications/RecordingChannel.php` (implementuje `NotificationChannel`, `name()` = `recording`, zapisuje otrzymane `PaymentNotification` w statycznej tablicy) i `tests/Support/Notifications/SendRecordingNotification.php` (`extends SendChannelNotification`, `channel()` = `app(RecordingChannel::class)`)
-- [ ] T063 [P] [US5] Test `tests/Feature/Notifications/ChannelExtensibilityTest.php`. Dodaj kanał tylko przez `config(['notifications.channels.recording' => ['enabled' => true, 'job' => SendRecordingNotification::class]])`, wtedy:
+- [X] T062 [P] [US5] Utwórz klasy testowe `tests/Support/Notifications/RecordingChannel.php` (implementuje `NotificationChannel`, `name()` = `recording`, zapisuje otrzymane `PaymentNotification` w statycznej tablicy) i `tests/Support/Notifications/SendRecordingNotification.php` (`extends SendChannelNotification`, `channel()` = `app(RecordingChannel::class)`)
+- [X] T063 [P] [US5] Test `tests/Feature/Notifications/ChannelExtensibilityTest.php`. Dodaj kanał tylko przez `config(['notifications.channels.recording' => ['enabled' => true, 'job' => SendRecordingNotification::class]])`, wtedy:
   - listener z `Queue::fake()` wypycha `SendRecordingNotification` obok Mailtrap i SalesTeam;
   - job dziedziczy `tries()=4`, `backoff()=[60,300,900]` i timeout 30;
   - wykonanie joba daje `RecordingChannel` z jednym powiadomieniem i wiersz `notification_deliveries` z `channel=recording`, `status=delivered`;
   - błąd przejściowy w `RecordingChannel` daje log `notification.attempt_failed` z `channel=recording` (US5, scenariusz 1).
-- [ ] T064 [P] [US5] Test `tests/Feature/Webhooks/ProviderExtensibilityTest.php`. Dodaj dostawcę `acme` tylko przez `config(['webhooks.providers.acme' => ['driver' => AcmeTestProvider::class, 'secret' => 'acme_secret', 'tolerance' => 300]])` (klasa z T031), wtedy:
+- [X] T064 [P] [US5] Test `tests/Feature/Webhooks/ProviderExtensibilityTest.php`. Dodaj dostawcę `acme` tylko przez `config(['webhooks.providers.acme' => ['driver' => AcmeTestProvider::class, 'secret' => 'acme_secret', 'tolerance' => 300]])` (klasa z T031), wtedy:
   - webhook z `X-Payment-Provider: acme` podpisany `acme_secret` → 200 `accepted`, wiersz z `provider=acme`, `PaymentEventReceived` z `provider=acme`;
   - zły podpis → 401 `invalid_signature`;
   - uszkodzony JSON → 400;
@@ -557,7 +557,7 @@ oraz przegląd z T068.
 
 ### Implementation for User Story 5
 
-- [ ] T065 [US5] Jeśli T063 lub T064 są czerwone, usuń przyczynę w kodzie produkcyjnym tak, żeby rozszerzenie działało przez konfigurację. Przykłady: identyfikator `generic`, `mailtrap` lub `salesteam` wpisany na sztywno poza `config/` i klasami tych kanałów lub dostawców; lista kanałów wpisana w listenerze. Każdą taką zmianę dopisz w PHPDoc odpowiedniej klasy
+- [X] T065 [US5] Jeśli T063 lub T064 są czerwone, usuń przyczynę w kodzie produkcyjnym tak, żeby rozszerzenie działało przez konfigurację. Przykłady: identyfikator `generic`, `mailtrap` lub `salesteam` wpisany na sztywno poza `config/` i klasami tych kanałów lub dostawców; lista kanałów wpisana w listenerze. Każdą taką zmianę dopisz w PHPDoc odpowiedniej klasy
 
 **Checkpoint**: wszystkie user stories są niezależnie funkcjonalne.
 
@@ -567,16 +567,16 @@ oraz przegląd z T068.
 
 **Purpose**: bramki jakości konstytucji i walidacja end-to-end
 
-- [ ] T066 [P] Przegląd zgodności z Zasadami II–IV:
+- [X] T066 [P] Przegląd zgodności z Zasadami II–IV:
   - `grep -rn "catch" app/` → każdy `catch` loguje i rzuca dalej albo woła `fail()` (brak pustych bloków);
   - każdy job i listener (`app/Jobs/Notifications/*`, `app/Listeners/QueuePaymentNotifications.php`) deklaruje `tries`, `backoff`, `timeout` i `failed()`;
   - `PaymentEventMail` nie implementuje `ShouldQueue`;
   - w logach nie ma kluczy kontekstu zawierających `signature`, poza nagłówkiem, który procesor F-R9 maskuje (np. `verified_with`, nie `signature_key`).
 
   Wyniki zapisz w opisie zmiany.
-- [ ] T067 [P] Dodaj przypadek do `tests/Unit/Logging/RedactSensitiveDataTest.php`: kontekst `headers` z kluczem `x-webhook-signature` jest maskowany do `[REDACTED]`, a `x-payment-provider` i `verified_with` zostają jawne (SC-008 fundamentu, research R13)
-- [ ] T068 Przegląd SC-009: `grep -rnE "'(generic|mailtrap|salesteam)'" app/ routes/ bootstrap/`. Dozwolone wystąpienia są tylko w `config/*.php` oraz w `name()` klas `MailtrapChannel` i `SalesTeamChannel`. Każde inne usuń (powiązane z T065)
-- [ ] T069 Uruchom `vendor/bin/pint --dirty --format agent`, a potem `php artisan test --compact --exclude-group=integration` oraz `docker compose exec app php artisan test --compact --group=integration`. Wszystkie testy MUSZĄ być zielone, a ewentualne porażki zgłoś z wyjściem
+- [X] T067 [P] Dodaj przypadek do `tests/Unit/Logging/RedactSensitiveDataTest.php`: kontekst `headers` z kluczem `x-webhook-signature` jest maskowany do `[REDACTED]`, a `x-payment-provider` i `verified_with` zostają jawne (SC-008 fundamentu, research R13)
+- [X] T068 Przegląd SC-009: `grep -rnE "'(generic|mailtrap|salesteam)'" app/ routes/ bootstrap/`. Dozwolone wystąpienia są tylko w `config/*.php` oraz w `name()` klas `MailtrapChannel` i `SalesTeamChannel`. Każde inne usuń (powiązane z T065)
+- [X] T069 Uruchom `vendor/bin/pint --dirty --format agent`, a potem `php artisan test --compact --exclude-group=integration` oraz `docker compose exec app php artisan test --compact --group=integration`. Wszystkie testy MUSZĄ być zielone, a ewentualne porażki zgłoś z wyjściem
 - [ ] T070 Przeprowadź ręcznie scenariusze z [quickstart.md](quickstart.md): tabela 1–12, rotacja sekretu, ponowienia `fail_first_n` (≈ 6 min), dead-letter `permanent` i `transient` (≈ 21–23 min) oraz `queue:retry`. Potwierdź SC-004 (mail < 1 min), SC-006, SC-007 i SC-010 na żywym środowisku z Mailtrap. Odchylenia zapisz jako zadania poprawkowe
 
 ---

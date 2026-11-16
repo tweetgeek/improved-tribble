@@ -30,6 +30,9 @@ it('accepts exactly one of 10 concurrent deliveries of the same event', function
         array_fill(0, 10, WebhookContender::receive($payload, $rawBody, $this->database)),
     );
 
-    expect(array_count_values($results))->toBe(['accepted' => 1, 'duplicate' => 9])
+    $outcomes = array_count_values($results);
+    ksort($outcomes);
+
+    expect($outcomes)->toBe(['accepted' => 1, 'duplicate' => 9])
         ->and(DB::connection('pgsql')->table('webhook_events')->where('event_id', $eventId)->count())->toBe(1);
 })->with(range(1, 5));
