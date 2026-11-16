@@ -69,7 +69,7 @@ return [
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
-            'block_for' => null,
+            'block_for' => (int) env('REDIS_QUEUE_BLOCK_FOR', 5),
             'after_commit' => false,
         ],
 
@@ -124,6 +124,27 @@ return [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
         'database' => env('DB_CONNECTION', 'sqlite'),
         'table' => 'failed_jobs',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Retry Policy
+    |--------------------------------------------------------------------------
+    |
+    | Default retry policy for queued jobs (see App\Jobs\Concerns\UsesDefaultRetryPolicy).
+    | Invariants guarded by tests/Unit/Queue/RetryPolicyTest.php:
+    |   - tries >= 4
+    |   - backoff strictly increasing
+    |   - timeout < connections.redis.retry_after (90)
+    |   - max_exceptions <= tries
+    |
+    */
+
+    'retry_policy' => [
+        'tries' => 5,
+        'backoff' => [10, 30, 90, 270],
+        'timeout' => 60,
+        'max_exceptions' => 3,
     ],
 
 ];

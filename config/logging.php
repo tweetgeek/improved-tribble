@@ -1,5 +1,7 @@
 <?php
 
+use App\Logging\RedactSensitiveData;
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -54,7 +56,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'stderr_json,daily_json')),
             'ignore_exceptions' => false,
         ],
 
@@ -131,10 +133,52 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        'stderr_json' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'handler_with' => [
+                'stream' => 'php://stderr',
+            ],
+            'formatter' => JsonFormatter::class,
+            'formatter_with' => ['includeStacktraces' => true],
+            'processors' => [RedactSensitiveData::class],
+        ],
+
+        'daily_json' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel.json'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'formatter' => JsonFormatter::class,
+            'formatter_with' => ['includeStacktraces' => true],
+            'processors' => [RedactSensitiveData::class],
+        ],
+
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Redaction
+    |--------------------------------------------------------------------------
+    |
+    | Keys (compared after lowercasing and removing "-" and "_") whose values
+    | are masked by App\Logging\RedactSensitiveData, plus the maximum length of
+    | any string logged in a context or extra field.
+    |
+    */
+
+    'redact' => [
+        'keys' => [
+            'password', 'secret', 'token', 'apikey', 'authorization', 'signature',
+            'cardnumber', 'pan', 'cvv', 'cvc', 'cookie', 'iban',
+        ],
+        'replacement' => '[REDACTED]',
+        'max_string_length' => 10000,
     ],
 
 ];
