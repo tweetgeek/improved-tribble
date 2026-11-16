@@ -88,3 +88,21 @@ it('never answers a malformed request with a 5xx', function (string $content) {
     'not json' => 'plain text',
     'huge' => str_repeat('{', 1048577),
 ]);
+
+it('leaves JSON syntax of payment webhooks to the webhook endpoint, which authenticates first', function () {
+    test()->call('POST', '/api/v1/webhooks/payment', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_ACCEPT' => 'application/json',
+    ], '{"event_id": "evt_1",')
+        ->assertStatus(401)
+        ->assertJsonPath('error.code', 'unknown_provider');
+});
+
+it('still rejects payment webhooks larger than 1 MiB with 413', function () {
+    test()->call('POST', '/api/v1/webhooks/payment', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_ACCEPT' => 'application/json',
+    ], '{"data":"'.str_repeat('a', 1048576).'"}')
+        ->assertStatus(413)
+        ->assertJsonPath('error.code', 'payload_too_large');
+});

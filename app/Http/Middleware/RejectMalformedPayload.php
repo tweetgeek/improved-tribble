@@ -13,6 +13,15 @@ class RejectMalformedPayload
     private const MAX_BODY_BYTES = 1048576;
 
     /**
+     * Paths whose JSON syntax is checked by the endpoint itself, after authenticating the sender:
+     * an unauthenticated payment webhook must get 401, not 400 (specs/002 research R2).
+     * The body size limit still applies to them.
+     *
+     * @var list<string>
+     */
+    protected array $exceptJsonSyntax = ['api/v1/webhooks/*'];
+
+    /**
      * Handle an incoming request.
      *
      * @param  Closure(Request): (Response)  $next
@@ -27,7 +36,7 @@ class RejectMalformedPayload
             return ErrorResponse::make('payload_too_large', 'The request body is too large.', 413);
         }
 
-        if ($request->isJson() && $content !== '' && ! json_validate($content)) {
+        if ($request->isJson() && $content !== '' && ! $request->is(...$this->exceptJsonSyntax) && ! json_validate($content)) {
             $this->logRejection($request, $content);
 
             return ErrorResponse::make('malformed_payload', 'Request body is not valid JSON.', 400);
