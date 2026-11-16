@@ -611,3 +611,12 @@ Task: "Trait UsesDefaultRetryPolicy w app/Jobs/Concerns/UsesDefaultRetryPolicy.p
   ma powodować błąd (Zasada IV).
 - Commit po każdym zadaniu lub logicznej grupie zadań; repozytorium nie jest jeszcze
   zainicjalizowane jako git, więc `git init` należy do decyzji użytkownika.
+
+---
+
+## Phase 7: Convergence
+
+- [ ] T057 W `config/database.php` dodaj limity czasu połączeń, tak aby każde sprawdzenie stanu kończyło się w ~5 s, a cały `GET /health` w ≤ ~10 s także przy niedostępnym Redisie lub PostgreSQL: `timeout` i `read_timeout` dla połączeń `redis.default` i `redis.cache` (`read_timeout` musi być większy niż `queue.connections.redis.block_for` = 5 s, żeby nie zrywać workera) oraz limit połączenia dla `pgsql`; uwzględnij `max_retries` Redisa i to, że cztery sprawdzenia po kolei dotykają Redisa (`queue`, `cache`, `worker`, cache wyniku `mail`), więc ich czasy się sumują. Zweryfikuj w `docker compose` z Redisem wskazanym na host `.invalid` oraz po `docker compose stop redis` i dodaj test pilnujący obecności limitów w konfiguracji per plan: Performance Goals / contracts/health-http.md (partial)
+- [ ] T058 W `app/Services/Health/Checks/MailTransportCheck.php` uniezależnij wynik `mail` w trybie HTTP od dostępności cache: gdy odczyt lub zapis `health:mail:last_result` rzuca wyjątek, zaloguj go na poziomie `error` i wykonaj świeże sprawdzenie SMTP zamiast raportować `mail down`. Dodaj przypadek w `tests/Feature/Health/MailTransportCheckTest.php`: cache rzuca wyjątek, a transport SMTP działa → `mail up` per FR-008 (partial)
+- [ ] T059 Rozszerz `app/Logging/RedactSensitiveData.php` o maskowanie pól wrażliwych w stringach spoza składni JSON: ciała `application/x-www-form-urlencoded` (`password=…&card_number=…`, logowane jako surowe ciało przy 413) oraz serializacji PHP w `payload.data.command` zadania logowanego przez listenery `JobExceptionOccurred` / `JobFailed`. Dodaj przypadki w `tests/Unit/Logging/RedactSensitiveDataTest.php` i `tests/Feature/Queue/JobFailureLoggingTest.php` (zadanie z polem `password` → brak jawnej wartości w kontekście logu) per FR-017 / SC-008 (partial)
+- [ ] T060 W `bootstrap/app.php`, w `$exceptions->context(...)`, loguj faktyczną treść żądania: dla ciała innego niż JSON i formularz (np. `text/xml`) dodaj surowe `getContent()` zamiast pustego `request()->all()` i nie mieszaj parametrów query z ciałem. Dodaj przypadek w `tests/Feature/Http/ErrorFormatTest.php` per FR-018 / US3/AC5 (partial)
